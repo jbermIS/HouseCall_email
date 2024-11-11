@@ -19,7 +19,7 @@ app = Flask(__name__)
 # Configuration
 HOUSECALL_SIGNING_SECRET = os.environ.get('HOUSECALL_SIGNING_SECRET', '')
 JOB_CHAT_WEBHOOK_URL = os.environ.get('GOOGLE_CHAT_WEBHOOK_URL', '')
-ESTIMATE_CHAT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAAAlrsaokU/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=LDEJGsWIaSg73zCrvDGdVhVKjpvdyHuEeyiQDuPKZxU"
+ESTIMATE_CHAT_WEBHOOK_URL = os.environ.get('ESTIMATE_CHAT_WEBHOOK_URL', '')
 
 def format_time(time_str):
     """Format schedule time to be more readable"""

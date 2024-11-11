@@ -114,8 +114,6 @@ def send_appointment_notification(title, appointment, subtitle, is_cancelled=Fal
                 "header": {
                     "title": title,
                     "subtitle": subtitle,
-                    "imageUrl": "https://via.placeholder.com/64",  # Optional: Replace with your logo
-                    "imageType": "SQUARE"
                 },
                 "sections": [
                     {

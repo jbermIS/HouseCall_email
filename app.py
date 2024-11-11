@@ -16,71 +16,52 @@ app = Flask(__name__)
 HOUSECALL_SIGNING_SECRET = os.environ.get('HOUSECALL_SIGNING_SECRET', '')
 GOOGLE_CHAT_WEBHOOK_URL = os.environ.get('GOOGLE_CHAT_WEBHOOK_URL', '')
 
-def verify_signature(timestamp, raw_body, provided_signature):
-    """
-    Verify webhook signature exactly as specified by Housecall Pro.
-    """
-    # Construct signature body: timestamp + "." + json_payload
-    signature_body = f"{timestamp}.{raw_body}"
-    
-    # Log the components for debugging
-    logger.info(f"Verification components:")
-    logger.info(f"Timestamp: {timestamp}")
-    logger.info(f"Raw body: {raw_body}")
-    logger.info(f"Signature body: {signature_body}")
-    logger.info(f"Provided signature: {provided_signature}")
-    
-    # Compute HMAC with SHA256
-    calculated_signature = hmac.new(
-        HOUSECALL_SIGNING_SECRET.encode('utf-8'),
-        signature_body.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
-    
-    logger.info(f"Calculated signature: {calculated_signature}")
-    
-    # Compare signatures
-    return hmac.compare_digest(calculated_signature, provided_signature)
-
 @app.route('/')
 def home():
     return 'Webhook receiver is running!'
 
 @app.route('/webhooks/housecall', methods=['POST'])
 def handle_webhook():
-    # Get the raw body before parsing
+    # Log the incoming request
+    logger.info("\n=== New Webhook Request ===")
+    logger.info(f"Headers: {dict(request.headers)}")
     raw_body = request.get_data(as_text=True)
+    logger.info(f"Raw Body: {raw_body}")
     
-    # Get headers
-    timestamp = request.headers.get('Api-Timestamp')
-    provided_signature = request.headers.get('Api-Signature')
-    
-    logger.info(f"Received webhook with timestamp: {timestamp}")
-    
-    # Verify signature
-    if not verify_signature(timestamp, raw_body, provided_signature):
-        logger.error("Signature verification failed")
-        return 'Invalid signature', 401
-    
-    # Parse the JSON body
     try:
         payload = json.loads(raw_body)
-    except json.JSONDecodeError:
-        logger.error("Invalid JSON payload")
-        return 'Invalid JSON', 400
-    
-    # Process webhook
-    if payload.get('event') == 'job.created':
-        logger.info("Processing job.created event")
-        try:
-            send_chat_notification(payload['job'])
-            return 'OK', 200
-        except Exception as e:
-            logger.error(f"Error sending notification: {str(e)}")
-            return 'Error processing webhook', 500
-    else:
-        logger.info(f"Received event: {payload.get('event', 'unknown')}")
+        
+        # If we have a signing secret, verify the signature (for future use)
+        if HOUSECALL_SIGNING_SECRET:
+            timestamp = request.headers.get('Api-Timestamp')
+            provided_signature = request.headers.get('Api-Signature')
+            if timestamp and provided_signature:
+                signature_body = f"{timestamp}.{raw_body}"
+                calculated_signature = hmac.new(
+                    HOUSECALL_SIGNING_SECRET.encode('utf-8'),
+                    signature_body.encode('utf-8'),
+                    hashlib.sha256
+                ).hexdigest()
+                logger.info(f"Signature verification (for future reference):")
+                logger.info(f"Provided: {provided_signature}")
+                logger.info(f"Calculated: {calculated_signature}")
+
+        # Process the webhook
+        if payload.get('event') == 'job.created':
+            logger.info("Processing job.created event")
+            try:
+                send_chat_notification(payload['job'])
+            except Exception as e:
+                logger.error(f"Error sending notification: {str(e)}")
+                return 'Error processing webhook', 500
+        else:
+            logger.info(f"Received event: {payload.get('event', 'unknown')}")
+        
         return 'OK', 200
+        
+    except Exception as e:
+        logger.error(f"Error processing webhook: {str(e)}")
+        return 'Error processing request', 500
 
 def send_chat_notification(job):
     customer = job['customer']

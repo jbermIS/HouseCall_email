@@ -6,7 +6,7 @@ import json
 from flask import Flask, request
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Setup logging
 logging.basicConfig(
@@ -31,7 +31,10 @@ def format_time(time_str):
 
         est_tz = pytz.timezone('America/New_York')
         est_time = dt.astimezone(est_tz)
-        return est_time.strftime('%B %d, %Y at %I:%M %p')
+        adjusted_time = est_time - timedelta(hours=1)
+
+
+        return adjusted_time.strftime('%B %d, %Y at %I:%M %p')
     except:
         return time_str
 

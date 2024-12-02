@@ -1,6 +1,7 @@
 import os
 import hmac
 import hashlib
+import pytz
 import json
 from flask import Flask, request
 import logging
@@ -27,7 +28,10 @@ def format_time(time_str):
         return 'Not scheduled'
     try:
         dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
-        return dt.strftime('%B %d, %Y at %I:%M %p')
+
+        est_tz = pytz.timezone('America/New_York')
+        est_time = dt.astimezone(est_tz)
+        return est_time.strftime('%B %d, %Y at %I:%M %p')
     except:
         return time_str
 
